@@ -1,7 +1,9 @@
 Initial commit
 
 Pulled source from http://www.cudytech.com/wu1200_software_download
+
 Add Fix Kernel 5.6.1.6
+
 Add additional USB devices based on RTL8822BU taken from https://github.com/cilynx/rtl88x2bu
 
 Supported Devices :
