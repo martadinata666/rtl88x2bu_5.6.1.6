@@ -1,6 +1,7 @@
 Initial commit
 
 Pulled source from http://www.cudytech.com/wu1200_software_download
+as per version rtl88x2BU_WiFi_linux_v5.6.1.6_35492.20191025_COEX20180928-6a6a
 
 Add Fix Kernel 5.6.1.6
 
