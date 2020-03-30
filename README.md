@@ -1,9 +1,10 @@
 Pulled source from http://www.cudytech.com/wu1200_software_download
 as per version rtl88x2BU_WiFi_linux_v5.6.1.6_35492.20191025_COEX20180928-6a6a
 
-Add Fix Kernel 5.6.1.6 as per comment https://github.com/cilynx/rtl88x2bu/issues/20#issue-573107109
-
 Add additional USB devices based on RTL8822BU taken from https://github.com/cilynx/rtl88x2bu
+Add Kernel 5.6 Support https://github.com/tester1969/rtl88x2bu
+
+Last known build Linux next-20200327
 
 Supported Devices :
 {USB_DEVICE_AND_INTERFACE_INFO(0x13b1, 0x0043, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, /* Alpha - Alpha*/
