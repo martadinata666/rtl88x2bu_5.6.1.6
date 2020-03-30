@@ -88,7 +88,7 @@ MODULE_PARM_DESC(rtw_lps_level, "The default LPS level");
 
 module_param(rtw_lps_chk_by_tp, int, 0644);
 
-/* LPS: 
+/* LPS:
  * rtw_smart_ps = 0 => TX: pwr bit = 1, RX: PS_Poll
  * rtw_smart_ps = 1 => TX: pwr bit = 0, RX: PS_Poll
  * rtw_smart_ps = 2 => TX: pwr bit = 0, RX: NullData with pwr bit = 0
@@ -97,8 +97,8 @@ int rtw_smart_ps = 2;
 
 int rtw_max_bss_cnt = 0;
 module_param(rtw_max_bss_cnt, int, 0644);
-#ifdef CONFIG_WMMPS_STA	
-/* WMMPS: 
+#ifdef CONFIG_WMMPS_STA
+/* WMMPS:
  * rtw_smart_ps = 0 => Only for fw test
  * rtw_smart_ps = 1 => Refer to Beacon's TIM Bitmap
  * rtw_smart_ps = 2 => Don't refer to Beacon's TIM Bitmap
@@ -192,8 +192,6 @@ int rtw_ampdu_enable = 1;/* for enable tx_ampdu , */ /* 0: disable, 0x1:enable *
 int rtw_rx_stbc = 1;/* 0: disable, bit(0):enable 2.4g, bit(1):enable 5g, default is set to enable 2.4GHZ for IOT issue with bufflao's AP at 5GHZ */
 #if (defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B)) && defined(CONFIG_PCI_HCI)
 int rtw_rx_ampdu_amsdu = 2;/* 0: disabled, 1:enabled, 2:auto . There is an IOT issu with DLINK DIR-629 when the flag turn on */
-#elif (defined(CONFIG_RTL8822B) && defined(CONFIG_SDIO_HCI))
-int rtw_rx_ampdu_amsdu = 1;
 #else
 int rtw_rx_ampdu_amsdu;/* 0: disabled, 1:enabled, 2:auto . There is an IOT issu with DLINK DIR-629 when the flag turn on */
 #endif
@@ -234,7 +232,6 @@ int rtw_short_gi = 0xf;
 int rtw_ldpc_cap = 0x33;
 /* BIT0: Enable VHT STBC Rx, BIT1: Enable VHT STBC Tx, BIT4: Enable HT STBC Rx, BIT5: Enable HT STBC Tx */
 int rtw_stbc_cap = 0x13;
-
 /*
 * BIT0: Enable VHT SU Beamformer
 * BIT1: Enable VHT SU Beamformee
@@ -269,7 +266,11 @@ module_param(rtw_rf_config, int, 0644);
 int rtw_check_hw_status = 0;
 
 int rtw_low_power = 0;
-int rtw_wifi_spec = 0;
+#ifdef CONFIG_WIFI_TEST
+	int rtw_wifi_spec = 1;/* for wifi test */
+#else
+	int rtw_wifi_spec = 0;
+#endif
 
 int rtw_special_rf_path = 0; /* 0: 2T2R ,1: only turn on path A 1T1R */
 
@@ -404,12 +405,6 @@ char *rtw_initmac = 0;  /* temp mac address if users want to use instead of the 
 #ifdef CONFIG_AP_MODE
 u8 rtw_bmc_tx_rate = MGN_UNKNOWN;
 #endif
-#ifdef RTW_WOW_STA_MIX
-int rtw_wowlan_sta_mix_mode = 1;
-#else
-int rtw_wowlan_sta_mix_mode = 0;
-#endif
-module_param(rtw_wowlan_sta_mix_mode, int, 0644);
 module_param(rtw_pwrtrim_enable, int, 0644);
 module_param(rtw_initmac, charp, 0644);
 module_param(rtw_special_rf_path, int, 0644);
@@ -803,13 +798,6 @@ module_param(rtw_fw_param_init, int, 0644);
  */
 uint rtw_wakeup_event = RTW_WAKEUP_EVENT;
 module_param(rtw_wakeup_event, uint, 0644);
-/*
- * 0: common WOWLAN
- * bit[0]: disable BB RF
- * bit[1]: For wireless remote controller with or without connection
- */
-uint rtw_suspend_type = RTW_SUSPEND_TYPE;
-module_param(rtw_suspend_type, uint, 0644);
 #endif
 
 void rtw_regsty_load_target_tx_power(struct registry_priv *regsty)
@@ -1151,13 +1139,11 @@ uint loadparam(_adapter *padapter)
 
 #ifdef CONFIG_WOWLAN
 	registry_par->wakeup_event = rtw_wakeup_event;
-	registry_par->suspend_type = rtw_suspend_type;
 #endif
 
 #ifdef CONFIG_SUPPORT_TRX_SHARED
 	registry_par->trx_share_mode = rtw_trx_share_mode;
 #endif
-	registry_par->wowlan_sta_mix_mode = rtw_wowlan_sta_mix_mode;
 
 #ifdef CONFIG_PCI_HCI
 	registry_par->pci_aspm_config = rtw_pci_aspm_enable;
@@ -1336,18 +1322,23 @@ unsigned int rtw_classify8021d(struct sk_buff *skb)
 }
 
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0))
+static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb
+    , struct net_device *sb_dev
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5,2,0))
+    , select_queue_fallback_t fallback
+    #endif
+)
+#else
 static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
-	, struct net_device *sb_dev
-	#else
 	, void *accel_priv
-	#endif
-	#if ((LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)))
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 	, select_queue_fallback_t fallback
 	#endif
 #endif
 )
+#endif
 {
 	_adapter	*padapter = rtw_netdev_priv(dev);
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
@@ -2176,13 +2167,6 @@ struct dvobj_priv *devobj_init(void)
 	pdvobj->en_napi_dynamic = 0;
 #endif /* CONFIG_RTW_NAPI_DYNAMIC */
 
-
-#ifdef CONFIG_RTW_TPT_MODE
-	pdvobj->tpt_mode = 0;
-	pdvobj->edca_be_ul = 0x5ea42b;
-	pdvobj->edca_be_dl = 0x00a42b;
-#endif 
-	pdvobj->scan_deny = _FALSE;
 
 	return pdvobj;
 
@@ -3296,7 +3280,7 @@ int _netdev_open(struct net_device *pnetdev)
 	}
 	#endif /*CONFIG_AUTOSUSPEND*/
 
-	if (!rtw_is_hw_init_completed(padapter)) { // ips 
+	if (!rtw_is_hw_init_completed(padapter)) { // ips
 		rtw_clr_surprise_removed(padapter);
 		rtw_clr_drv_stopped(padapter);
 		RTW_ENABLE_FUNC(padapter, DF_RX_BIT);
@@ -3318,7 +3302,7 @@ int _netdev_open(struct net_device *pnetdev)
 		{
 	#ifdef CONFIG_BT_COEXIST_SOCKET_TRX
 			_adapter *prim_adpt = GET_PRIMARY_ADAPTER(padapter);
-		
+
 			if (prim_adpt && (_TRUE == prim_adpt->EEPROMBluetoothCoexist)) {
 				rtw_btcoex_init_socket(prim_adpt);
 				prim_adpt->coex_info.BtMgnt.ExtConfig.HCIExtensionVer = 0x04;
@@ -3705,7 +3689,7 @@ int _pm_netdev_open(_adapter *padapter)
 	}
 	#endif /*CONFIG_AUTOSUSPEND*/
 
-	if (!rtw_is_hw_init_completed(padapter)) { // ips 
+	if (!rtw_is_hw_init_completed(padapter)) { // ips
 		rtw_clr_surprise_removed(padapter);
 		rtw_clr_drv_stopped(padapter);
 		status = rtw_hal_init(padapter);
@@ -4681,7 +4665,7 @@ int rtw_suspend_common(_adapter *padapter)
 
 	if (rtw_mi_check_status(padapter, MI_AP_MODE) == _FALSE) {
 #ifdef CONFIG_WOWLAN
-		if (check_fwstate(pmlmepriv, _FW_LINKED) || WOWLAN_IS_STA_MIX_MODE(padapter))
+		if (check_fwstate(pmlmepriv, _FW_LINKED))
 			pwrpriv->wowlan_mode = _TRUE;
 		else if (pwrpriv->wowlan_pno_enable == _TRUE)
 			pwrpriv->wowlan_mode |= pwrpriv->wowlan_pno_enable;
@@ -4728,7 +4712,6 @@ int rtw_resume_process_wow(_adapter *padapter)
 	struct debug_priv *pdbgpriv = &psdpriv->drv_dbg;
 	struct wowlan_ioctl_param poidparam;
 	struct sta_info	*psta = NULL;
-	struct registry_priv  *registry_par = &padapter->registrypriv;
 	int ret = _SUCCESS;
 
 	RTW_INFO("==> "FUNC_ADPT_FMT" entry....\n", FUNC_ADPT_ARG(padapter));
@@ -4755,11 +4738,6 @@ int rtw_resume_process_wow(_adapter *padapter)
 	if (pwrpriv->wowlan_pno_enable)
 		rtw_set_fw_in_ips_mode(padapter, _FALSE);
 #endif /* CONFIG_FWLPS_IN_IPS */
-#if defined(CONFIG_LPS_LCLK) && defined(RTW_HALMAC)
-	if (pwrpriv->wowlan_pno_enable)
-		rtw_set_fw_config_32k(padapter, _FALSE);
-
-#endif
 #endif/* CONFIG_PNO_SUPPORT */
 
 	if (pwrpriv->wowlan_mode == _TRUE) {
@@ -4805,14 +4783,6 @@ int rtw_resume_process_wow(_adapter *padapter)
 		rtw_mi_start_drv_threads(padapter);
 
 		rtw_mi_intf_start(padapter);
-		
-		if(registry_par->suspend_type == FW_IPS_DISABLE_BBRF && !check_fwstate(pmlmepriv, _FW_LINKED)) {
-			if (!rtw_is_surprise_removed(padapter)) {
-				rtw_hal_deinit(padapter);
-				rtw_hal_init(padapter);
-			}
-			RTW_INFO("FW_IPS_DISABLE_BBRF hal deinit, hal init \n");
-		}
 
 #ifdef CONFIG_CONCURRENT_MODE
 		rtw_mi_buddy_netif_carrier_on(padapter);

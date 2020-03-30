@@ -82,6 +82,13 @@ void rtw_set_tx_chksum_offload(_pkt *pkt, struct pkt_attrib *pattrib)
 	} else
 		{}
 
+	/*	HW unable to compute CSUM if header & payload was be encrypted by SW(cause TXDMA error) */
+	if (pattrib->bswenc == _TRUE) {
+		if (skb->ip_summed == CHECKSUM_PARTIAL)
+			skb_checksum_help(skb);
+		return;
+	}
+
 	/*	For HW rule, clear ipv4_csum & UDP/TCP_csum if it is UDP/TCP packet	*/
 	switch (protocol) {
 	case IPPROTO_UDP:

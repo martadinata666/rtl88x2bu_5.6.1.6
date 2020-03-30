@@ -8032,8 +8032,7 @@ static int rtw_wowlan_ctrl(struct net_device *dev,
 	RTW_INFO("+rtw_wowlan_ctrl: %s\n", extra);
 
 	if (!check_fwstate(pmlmepriv, _FW_LINKED) &&
-		check_fwstate(pmlmepriv, WIFI_STATION_STATE) &&
-		!WOWLAN_IS_STA_MIX_MODE(padapter)) {
+	    check_fwstate(pmlmepriv, WIFI_STATION_STATE)) {
 #ifdef CONFIG_PNO_SUPPORT
 		pwrctrlpriv->wowlan_pno_enable = _TRUE;
 #else
@@ -8292,12 +8291,6 @@ int rtw_vendor_ie_get_data(struct net_device *dev, int vendor_ie_num, char *extr
 		pstring += sprintf(pstring , "[Assoc Req]");
 	if (vendor_ie_mask & WIFI_ASSOCRESP_VENDOR_IE_BIT)
 		pstring += sprintf(pstring , "[Assoc Resp]");
-#ifdef CONFIG_P2P
-	if (vendor_ie_mask & WIFI_P2P_PROBEREQ_VENDOR_IE_BIT)
-		pstring += sprintf(pstring , "[P2P_Probe Req]");
-	if (vendor_ie_mask & WIFI_P2P_PROBERESP_VENDOR_IE_BIT)
-		pstring += sprintf(pstring , "[P2P_Probe Resp]");
-#endif
 
 	pstring += sprintf(pstring , "\nVendor IE:\n");
 	for (j = 0 ; j < pmlmepriv->vendor_ielen[vendor_ie_num]  ; j++)
@@ -8348,7 +8341,6 @@ int rtw_vendor_ie_set(struct net_device *dev, struct iw_request_info *info, unio
 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
 	u32 vendor_ie_mask = 0;
 	u32 vendor_ie_num = 0;
-	u32 vendor_ie_mask_max = BIT(WLAN_MAX_VENDOR_IE_MASK_MAX) - 1;
 	u32 id, elen;
 
 	ret = sscanf(extra, "%d,%x,%*s", &vendor_ie_num , &vendor_ie_mask);
@@ -8357,20 +8349,15 @@ int rtw_vendor_ie_set(struct net_device *dev, struct iw_request_info *info, unio
 	else
 		return -EINVAL;
 	totoal_ie_len = strlen(extra);
-	RTW_INFO("[%s] vendor_ie_num = %d , vendor_ie_mask = 0x%x , vendor_ie = %s , len = %d\n", __func__ , vendor_ie_num , vendor_ie_mask , extra  , totoal_ie_len);
+	RTW_INFO("[%s] vendor_ie_num = %d , vendor_ie_mask = %x , vendor_ie = %s , len = %d\n", __func__ , vendor_ie_num , vendor_ie_mask , extra  , totoal_ie_len);
 
 	if (vendor_ie_num  > WLAN_MAX_VENDOR_IE_NUM - 1) {
-		RTW_INFO("[%s] Fail, only support %d vendor ie\n", __func__ , WLAN_MAX_VENDOR_IE_NUM);
+		RTW_INFO("[%s] only support %d vendor ie\n", __func__ , WLAN_MAX_VENDOR_IE_NUM);
 		return -EFAULT;
 	}
 
 	if (totoal_ie_len > WLAN_MAX_VENDOR_IE_LEN) {
 		RTW_INFO("[%s] Fail , not support ie length extend %d\n", __func__ , WLAN_MAX_VENDOR_IE_LEN);
-		return -EFAULT;
-	}
-
-	if (vendor_ie_mask > vendor_ie_mask_max) {
-		RTW_INFO("[%s] Fail, not support vendor_ie_mask more than 0x%x\n", __func__ , vendor_ie_mask_max);
 		return -EFAULT;
 	}
 
@@ -8415,17 +8402,11 @@ int rtw_vendor_ie_set(struct net_device *dev, struct iw_request_info *info, unio
 	if (vendor_ie_mask & WIFI_PROBEREQ_VENDOR_IE_BIT)
 		RTW_INFO("[%s] Probe Req append vendor ie\n", __func__);
 	if (vendor_ie_mask & WIFI_PROBERESP_VENDOR_IE_BIT)
-		RTW_INFO("[%s] Probe Resp append vendor ie\n", __func__);
+		RTW_INFO("[%s] Probe Resp  append vendor ie\n", __func__);
 	if (vendor_ie_mask & WIFI_ASSOCREQ_VENDOR_IE_BIT)
 		RTW_INFO("[%s] Assoc Req append vendor ie\n", __func__);
 	if (vendor_ie_mask & WIFI_ASSOCRESP_VENDOR_IE_BIT)
 		RTW_INFO("[%s] Assoc Resp append vendor ie\n", __func__);
-#ifdef CONFIG_P2P
-	if (vendor_ie_mask & WIFI_P2P_PROBEREQ_VENDOR_IE_BIT)
-		RTW_INFO("[%s] P2P Probe Req append vendor ie\n", __func__);
-	if (vendor_ie_mask & WIFI_P2P_PROBERESP_VENDOR_IE_BIT)
-		RTW_INFO("[%s] P2P Probe Resp append vendor ie\n", __func__);
-#endif
 
 	pmlmepriv->vendor_ie_mask[vendor_ie_num] = vendor_ie_mask;
 

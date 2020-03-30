@@ -511,11 +511,6 @@ void rtw_os_recv_indicate_pkt(_adapter *padapter, _pkt *pkt, union recv_frame *r
 		pkt->protocol = eth_type_trans(pkt, padapter->pnetdev);
 		pkt->dev = padapter->pnetdev;
 		pkt->ip_summed = CHECKSUM_NONE; /* CONFIG_TCP_CSUM_OFFLOAD_RX */
-#ifdef CONFIG_TCP_CSUM_OFFLOAD_RX
-		if ((rframe->u.hdr.attrib.csum_valid == 1)
-		    && (rframe->u.hdr.attrib.csum_err == 0))
-			pkt->ip_summed = CHECKSUM_UNNECESSARY;
-#endif /* CONFIG_TCP_CSUM_OFFLOAD_RX */
 
 #ifdef CONFIG_RTW_NAPI
 #ifdef CONFIG_RTW_NAPI_DYNAMIC
